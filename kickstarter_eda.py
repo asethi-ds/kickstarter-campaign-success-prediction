@@ -44,5 +44,6 @@ all_source_files=import_source_files(config_file_name)
 kickstarter_source_dataset=pd.read_csv(all_source_files[0], encoding='ISO-8859-1')
 
 print("--- %s seconds ---" % (time.time() - start_time))
+
 # Data Cleaning
 

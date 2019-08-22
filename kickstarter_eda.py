@@ -4,6 +4,9 @@
 # Last updated 8/22/2019
 
 # Importing packages
+import sys
+# Clearing the memory
+sys.modules[__name__].__dict__.clear()
 import time
 start_time = time.time()
 import pandas as pd
@@ -36,6 +39,10 @@ def import_source_files(config_file_name):
 config_file_name = 'loc_config.ini'
 
 # Getting the two source datasets
+# Encoding ISO-8859-1 used since some of the project names have non ascii characters
 all_source_files=import_source_files(config_file_name)
-kickstarter_source_dataset_one=pd.read_csv(all_source_files[0], encoding='ISO-8859-1')
-kickstarter_source_dataset_two=pd.read_csv(all_source_files[1], encoding='ISO-8859-1')
+kickstarter_source_dataset=pd.read_csv(all_source_files[0], encoding='ISO-8859-1')
+
+print("--- %s seconds ---" % (time.time() - start_time))
+# Data Cleaning
+

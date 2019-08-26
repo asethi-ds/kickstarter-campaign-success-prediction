@@ -6,7 +6,7 @@
 # Importing packages
 import sys
 # Clearing the memory
-sys.modules[__name__].__dict__.clear()
+#sys.modules[__name__].__dict__.clear()
 import time
 start_time = time.time()
 import pandas as pd
@@ -36,12 +36,12 @@ def import_source_files(config_file_name):
 
 
 # Data Preprocessing
-def data_preprocess(kicksstarter_source_dataset):
+def data_preprocess(kicksstarter_workset):
 
     kickstarter_source_dataset['state'].value_counts()
 
     # Getting states suspended, cancelled, successful, failed
-    kickstarter_projects = kickstarter_source_dataset[(kickstarter_source_dataset['state'] == 'failed')|(kickstarter_source_dataset['state']
+    kickstarter_projects = kickstarter_workset[(kickstarter_source_dataset['state'] == 'failed')|(kickstarter_source_dataset['state']
     == 'successful')|(kickstarter_source_dataset['state'] == 'canceled')|(kickstarter_source_dataset['state'] == 'suspended')]
 
     # Populating the states canceled, suspended, failed as successful
@@ -58,7 +58,53 @@ def data_preprocess(kicksstarter_source_dataset):
     
     return kickstarter_projects
 
+#Function for counting syllables in project name
+# Semantic
+# If first word vowel add one syllable
+# Increase counter if vowel is followed by a consonant
+# Set minimum syllable value as one.
+def syllable_count(project_name):
+        
+    word=project_name.lower()
+    count=0
+    vowels='aeiouy'
+    
+    if word[0] in vowels:
+        count+=1
+   
+    for index in range(1,len(word)):
+    
+        if word[index] in vowels and word[index - 1] not in vowels:
+            count += 1
+        if word.endswith("e"):
+            count -= 1
+        if count == 0:
+            count += 1
+    return count
 
+
+# Feature engineering
+def feature_engineering(kickstarter_workset):
+    
+    # Invoking function to calculate syllables in the project name
+    kickstarter_workset["syllable_count"]   = kickstarter_workset["name"].apply(lambda x: syllable_count(x))
+    # Getting values for launched month, launched week, launched day
+    kickstarter_workset["launched_month"]   = kickstarter_workset["launched"].dt.month
+    kickstarter_workset["launched_week"]    = kickstarter_workset["launched"].dt.week
+    kickstarter_workset["launched_day"]     = kickstarter_workset["launched"].dt.weekday
+    # Marking the flag if the launch day falls on the weekend
+    kickstarter_workset["is_weekend"]       = kickstarter_workset["launched_day"].apply(lambda x: 1 if x > 4 else 0)
+    # Number of words in the name of the projects
+    kickstarter_workset["num_words"]        = kickstarter_workset["name"].apply(lambda x: len(x.split()))
+    # Duration calculation using the differnece between launching date and deadline
+    kickstarter_workset["duration"]         = kickstarter_workset["deadline"] - kickstarter_workset["launched"]
+    kickstarter_workset["duration"]         = kickstarter_workset["duration"].apply(lambda x: int(str(x).split()[0]))
+    # Competition evaluation
+    # This variable calculates the number of projects launched in the same week belonging to the same category
+    #kickstarter_workset['']
+    
+
+    return kickstarter_workset
 
 
 # Console for global variables and functions call
@@ -69,9 +115,10 @@ config_file_name = 'loc_config.ini'
 all_source_files=import_source_files(config_file_name)
 kickstarter_source_dataset=pd.read_csv(all_source_files[0], encoding='ISO-8859-1')
 
+# 
+kickstarter_workset=feature_engineering(kickstarter_source_dataset)
 
-kickstarter_workset=data_preprocess(kickstarter_source_dataset)
-
+kickstarter_workset=data_preprocess(kickstarter_workset)
 
 print("--- %s seconds ---" % (time.time() - start_time))
 

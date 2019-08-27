@@ -149,9 +149,25 @@ def feature_engineering(kickstarter_workset):
     # Binning the USD Goal level
     bins_goal_level                                    = np.array([0,0.5,1.5,5,200])
     kickstarter_workset['goal_level_bucket']           = pd.cut(kickstarter_workset.goal_level, bins_goal_level)
+    
+    # Calculating the average amount spent per backer
+
+    kickstarter_workset['average_amount_per_backer']   = kickstarter_workset['usd pledged']/kickstarter_workset['backers']
+    
+    # Marking currency as dollor, euro, gbp and others , this variable is strongly correlated with the country of launch
+    kickstarter_workset['currency_usd_flag']   = np.where(kickstarter_workset['currency'] == 'USD',1,0)
+
+    # Discarding some features that were created in the intermediate steps and retaining the remaining features
+    kickstarter_workset=kickstarter_workset[['ID', 'name', 'category', 'main_category', 'currency', 'deadline','goal', 'launched', 'pledged', 'state',
+        'backers', 'country',  'usd pledged', 'syllable_count', 'launched_month',  'launched_day', 'launched_year','launched_quarter', 'is_weekend','num_words',
+        'duration','competition_quotient','goal_level', 'duration_level', 'competition_quotient_bucket','duration_level_bucket', 'goal_level_bucket',
+        'average_amount_per_backer','currency_usd_flag']]
+   
+
+
+    kickstarter_workset=kickstarter_workset.columns.str.replace(' ','_')
 
     return kickstarter_workset
-
 
 
 # Console for global variables and functions call
@@ -162,10 +178,8 @@ config_file_name = 'loc_config.ini'
 all_source_files=import_source_files(config_file_name)
 kickstarter_source_dataset=pd.read_csv(all_source_files[0], encoding='ISO-8859-1')
 
-
-
 kickstarter_workset=data_preprocess(kickstarter_source_dataset)
 kickstarter_workset=feature_engineering(kickstarter_workset)
-#print(kickstarter_workset[['launched_year_week']].head)
+
 print("--- %s seconds ---" % (time.time() - start_time))
 

@@ -36,7 +36,7 @@ def import_source_files(config_file_name):
 
 
 # Data Preprocessing
-def data_preprocess(kicksstarter_workset):
+def data_preprocess(kickstarter_workset):
 
     kickstarter_source_dataset['state'].value_counts()
 
@@ -55,6 +55,8 @@ def data_preprocess(kicksstarter_workset):
     ((kickstarter_projects.isnull() | kickstarter_projects.isna()).sum() * 100 / kickstarter_projects.index.size).round(2)
     # We see that 234 missing values in usd pledged, we populate these missing values using values from usd_pledged_real
     kickstarter_projects['usd pledged'].fillna(kickstarter_projects.usd_pledged_real, inplace=True)
+    # Removing projects with goal less than 100 dollors
+    kickstarter_projects = kickstarter_projects[kickstarter_projects['goal']>100]
     
     return kickstarter_projects
 
@@ -65,11 +67,12 @@ def data_preprocess(kicksstarter_workset):
 # Set minimum syllable value as one.
 def syllable_count(project_name):
         
-    word=project_name.lower()
+    word=str(project_name).lower()
     count=0
-    vowels='aeiouy'
-    
-    if word[0] in vowels:
+    vowels='aeiou'
+    word=str(word)
+    first=word[:1] 
+    if first in vowels:
         count+=1
    
     for index in range(1,len(word)):
@@ -88,23 +91,67 @@ def feature_engineering(kickstarter_workset):
     
     # Invoking function to calculate syllables in the project name
     kickstarter_workset["syllable_count"]   = kickstarter_workset["name"].apply(lambda x: syllable_count(x))
+    
+    #Converting launched and deadline values to datetime pandas objects
+    kickstarter_workset['launched']         = pd.to_datetime(kickstarter_workset['launched'])
+    kickstarter_workset['deadline']         = pd.to_datetime(kickstarter_workset['deadline'])
+
     # Getting values for launched month, launched week, launched day
     kickstarter_workset["launched_month"]   = kickstarter_workset["launched"].dt.month
     kickstarter_workset["launched_week"]    = kickstarter_workset["launched"].dt.week
     kickstarter_workset["launched_day"]     = kickstarter_workset["launched"].dt.weekday
+    kickstarter_workset['launched_year']    = kickstarter_workset['launched'].dt.year
+    kickstarter_workset['launched_quarter'] = kickstarter_workset['launched'].dt.quarter
+    
     # Marking the flag if the launch day falls on the weekend
     kickstarter_workset["is_weekend"]       = kickstarter_workset["launched_day"].apply(lambda x: 1 if x > 4 else 0)
     # Number of words in the name of the projects
-    kickstarter_workset["num_words"]        = kickstarter_workset["name"].apply(lambda x: len(x.split()))
+    kickstarter_workset["num_words"]        = kickstarter_workset["name"].apply(lambda x: len(str(x).split()))
     # Duration calculation using the differnece between launching date and deadline
     kickstarter_workset["duration"]         = kickstarter_workset["deadline"] - kickstarter_workset["launched"]
     kickstarter_workset["duration"]         = kickstarter_workset["duration"].apply(lambda x: int(str(x).split()[0]))
-    # Competition evaluation
+   
+   # Competition evaluation
     # This variable calculates the number of projects launched in the same week belonging to the same category
-    #kickstarter_workset['']
+    kickstarter_workset['launched_year_week_category']        = kickstarter_workset['launched_year'].astype(str)+"_"+kickstarter_workset['launched_week'].astype(str)+"_    "+kickstarter_workset['main_category'].astype(str)
+    kickstarter_workset['launched_year_week']                 = kickstarter_workset['launched_year'].astype(str)+"_"+kickstarter_workset['launched_week'].astype(str)
+
+    # Getting average number of projects launched per week for each of the main categories category
+    kickstarter_workset['week_count']                         = kickstarter_workset.groupby('main_category')['launched_year_week'].transform('nunique')
+    kickstarter_workset['project_count_category']             = kickstarter_workset.groupby('main_category')['ID'].transform('count')
+    kickstarter_workset['weekly_average_category']            = kickstarter_workset['project_count_category']/kickstarter_workset['week_count']
+    kickstarter_workset_category_week=kickstarter_workset[['main_category','weekly_average_category']].drop_duplicates()
+
+    #Calculating number of projects launched for a combination of (year,week) for each main category
+    kickstarter_workset['weekly_category_launch_count']       = kickstarter_workset.groupby('launched_year_week_category')['ID'].transform('count')
+
+    #Competiton quotient 
+    kickstarter_workset['competition_quotient']               = kickstarter_workset['weekly_category_launch_count']/kickstarter_workset['weekly_average_category']
     
+    # Goal Level
+    # In this feature we compare the project goal with the mean goal for the category it belongs, the mean goal for the category is used as the normaliation coefficient
+    kickstarter_workset['mean_category_goal']                 = kickstarter_workset.groupby('main_category')['goal'].transform('mean')
+    kickstarter_workset['goal_level']                         = kickstarter_workset['goal']   / kickstarter_workset['mean_category_goal']
+    
+    #Duration Level
+    # In this feature we compare the project duration with the mean duration for the category with the duration of the given project 
+    kickstarter_workset['mean_category_duration']             = kickstarter_workset.groupby('main_category')['duration'].transform('mean')
+    kickstarter_workset['duration_level']                     = kickstarter_workset['duration']   / kickstarter_workset['mean_category_duration']
+
+    #Binning the Competition Quotient
+    bins_comp_quot                                     = np.array([0,0.25,1,1.5,2.5,10])
+    kickstarter_workset["competition_quotient_bucket"] = pd.cut(kickstarter_workset.competition_quotient, bins_comp_quot)
+    
+    #Binning the Duration Level
+    bins_duration_level                                = np.array([0,0.25,1,2,4])
+    kickstarter_workset["duration_level_bucket"]       = pd.cut(kickstarter_workset.duration_level, bins_duration_level)
+    
+    # Binning the USD Goal level
+    bins_goal_level                                    = np.array([0,0.5,1.5,5,200])
+    kickstarter_workset['goal_level_bucket']           = pd.cut(kickstarter_workset.goal_level, bins_goal_level)
 
     return kickstarter_workset
+
 
 
 # Console for global variables and functions call
@@ -115,10 +162,10 @@ config_file_name = 'loc_config.ini'
 all_source_files=import_source_files(config_file_name)
 kickstarter_source_dataset=pd.read_csv(all_source_files[0], encoding='ISO-8859-1')
 
-# 
-kickstarter_workset=feature_engineering(kickstarter_source_dataset)
 
-kickstarter_workset=data_preprocess(kickstarter_workset)
 
+kickstarter_workset=data_preprocess(kickstarter_source_dataset)
+kickstarter_workset=feature_engineering(kickstarter_workset)
+#print(kickstarter_workset[['launched_year_week']].head)
 print("--- %s seconds ---" % (time.time() - start_time))
 

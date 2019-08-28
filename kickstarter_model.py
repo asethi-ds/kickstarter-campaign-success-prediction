@@ -181,5 +181,16 @@ kickstarter_source_dataset=pd.read_csv(all_source_files[0], encoding='ISO-8859-1
 kickstarter_workset=data_preprocess(kickstarter_source_dataset)
 kickstarter_workset=feature_engineering(kickstarter_workset)
 
+# Hypothesis Test - To be added later
+# In this section we carry out hypothesis tests to validate/invalidate some of the assumptions we validate them before we model them
+# Test-1 Duration has effect on the state
+# Test-2 Length of the project name (syallables) has an effect on the state
+# Test-3 Competition has an effect on the state
+# Test-4 Quarter and Day of launch effect the state
+
+
+# Modelling campaign success
+
+
 print("--- %s seconds ---" % (time.time() - start_time))
 

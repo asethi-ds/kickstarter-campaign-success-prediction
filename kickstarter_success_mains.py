@@ -7,8 +7,8 @@
 import sys
 # Clearing the memory
 #sys.modules[__name__].__dict__.clear()
-import time
-start_time = time.time()
+
+
 import pandas as pd
 import numpy as np
 import openpyxl
@@ -30,6 +30,7 @@ from sklearn.metrics import classification_report
 from xgboost import XGBClassifier
 from sklearn import model_selection
 
+
 # Function definitions
 
 #Function to get source data
@@ -50,12 +51,12 @@ def import_source_files(config_file_name):
 
 
 # Data Preprocessing
-def data_preprocess(kickstarter_workset):
+def data_preprocess(kickstarter_source_dataset):
 
     kickstarter_source_dataset['state'].value_counts()
 
     # Getting states suspended, cancelled, successful, failed
-    kickstarter_projects = kickstarter_workset[(kickstarter_source_dataset['state'] == 'failed')|(kickstarter_source_dataset['state']
+    kickstarter_projects = kickstarter_source_dataset[(kickstarter_source_dataset['state'] == 'failed')|(kickstarter_source_dataset['state']
     == 'successful')|(kickstarter_source_dataset['state'] == 'canceled')|(kickstarter_source_dataset['state'] == 'suspended')]
 
     # Populating the states canceled, suspended, failed as successful
@@ -73,6 +74,7 @@ def data_preprocess(kickstarter_workset):
     kickstarter_projects = kickstarter_projects[kickstarter_projects['goal']>100]
     
     return kickstarter_projects
+
 
 #Function for counting syllables in project name
 # Semantic
@@ -98,6 +100,7 @@ def syllable_count(project_name):
         if count == 0:
             count += 1
     return count
+
 
 
 # Feature engineering
@@ -177,34 +180,11 @@ def feature_engineering(kickstarter_workset):
         'duration','competition_quotient','goal_level', 'duration_level', 'competition_quotient_bucket','duration_level_bucket', 'goal_level_bucket',
         'average_amount_per_backer','currency_usd_flag']]
    
-
+    
 
    # kickstarter_workset=kickstarter_workset.columns.str.replace(' ','_')
     
     return kickstarter_workset
 
 
-# Console for global variables and functions call
-config_file_name = 'loc_config.ini'
-
-# Getting the two source datasets
-# Encoding ISO-8859-1 used since some of the project names have non ascii characters
-all_source_files=import_source_files(config_file_name)
-kickstarter_source_dataset=pd.read_csv(all_source_files[0], encoding='ISO-8859-1')
-
-kickstarter_workset=data_preprocess(kickstarter_source_dataset)
-kickstarter_workset=feature_engineering(kickstarter_workset)
-
-# Hypothesis Test - To be added later
-# In this section we carry out hypothesis tests to validate/invalidate some of the assumptions we validate them before we model them
-# Test-1 Duration has effect on the state
-# Test-2 Length of the project name (syallables) has an effect on the state
-# Test-3 Competition has an effect on the state
-# Test-4 Quarter and Day of launch effect the state
-
-
-# Modelling campaign success
-kickstarter_workset.to_csv('kickstarter_head.csv')
-
-print("--- %s seconds ---" % (time.time() - start_time))
 

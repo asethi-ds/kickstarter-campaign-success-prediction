@@ -1,9 +1,7 @@
 import time
 import pandas as pd
 start_time = time.time()
-
 import kickstarter_success_mains as ks
-
 #console for global variables and functions call
 config_file_name = 'loc_config.ini'
 print(config_file_name)
@@ -24,21 +22,15 @@ kickstarter_workset=ks.feature_engineering(kickstarter_workset)
 # Test-2 Length of the project name (syallables) has an effect on the state
 # Test-3 Competition has an effect on the state
 # Test-4 Quarter and Day of launch effect the state
-
 # Modelling campaign success
 #kickstarter_workset.to_csv('kickstarter_head.csv')
-
 # Model data prepare
 # Identify  categorical variables, do one hot encoding for ones it is needed
 # Identify numeric to be added on the model'
 # Split test-train keeping the class balance constant
-
 # Make random forest model
 # Get output with metrics
-
 # Make xgboost model
 # Get output with metrics
-
 # Ending Print outputs
-
 print("--- %s seconds ---" % (time.time() - start_time))

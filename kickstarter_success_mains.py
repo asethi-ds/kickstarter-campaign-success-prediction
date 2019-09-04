@@ -175,16 +175,71 @@ def feature_engineering(kickstarter_workset):
     kickstarter_workset['currency_usd_flag']   = np.where(kickstarter_workset['currency'] == 'USD',1,0)
 
     # Discarding some features that were created in the intermediate steps and retaining the remaining features
-    kickstarter_workset=kickstarter_workset[['ID', 'name', 'category', 'main_category', 'currency', 'deadline','goal', 'launched', 'pledged', 'state',
-        'backers', 'country',  'usd pledged', 'syllable_count', 'launched_month',  'launched_day', 'launched_year','launched_quarter', 'is_weekend','num_words',
-        'duration','competition_quotient','goal_level', 'duration_level', 'competition_quotient_bucket','duration_level_bucket', 'goal_level_bucket',
+    kickstarter_workset=kickstarter_workset[['ID', 'name', 'category', 'main_category', 'currency', 'deadline','goal', 
+        'launched', 'pledged', 'state','backers', 'country',  'usd pledged', 'syllable_count', 'launched_month',
+        'launched_day', 'launched_year','launched_quarter', 'is_weekend','num_words',
+        'duration','competition_quotient','goal_level', 'duration_level', 'competition_quotient_bucket',
+        'duration_level_bucket', 'goal_level_bucket',
         'average_amount_per_backer','currency_usd_flag']]
    
-    
-
    # kickstarter_workset=kickstarter_workset.columns.str.replace(' ','_')
     
     return kickstarter_workset
+
+
+
+#def prepare_model_data(kickstarter_workset):
+  
+feature_categorical = ['main_category', 'launched_month', 'launched_year', 'launched_quarter','is_weekend',
+        'goal_level_bucket','currency_usd_flag','duration_level_bucket','currency','main_category']
+
+feature_numeric = ['average_amount_per_backer', 'goal_level', 'competition_quotient', 'syllable_count','backers']
+#kickstarter_workset['goal_level_bucket']
+
+features_main=feature_categorical+feature_numeric
+
+kickstarter_workset=kickstarter_workset.sample(n=4000)
+
+for col in feature_categorical:
+        kickstarter_workset[col] = kickstarter_workset[col].astype('category')
+
+
+kick_projects_ip = pd.get_dummies(kickstarter_workset[features_main],columns = feature_categorical)
+
+kick_projects_ip = kick_projects_ip.loc[:,~kick_projects_ip.columns.duplicated()]
+
+#features_main=feature_categorical+feature_numeric
+#features_workset
+#kick_projects_ip['state']
+
+
+y=kickstarter_workset['state']
+X=kick_projects_ip[kick_projects_ip.columns]
+
+X.columns=X.columns.str.replace('[','')
+X.columns=X.columns.str.replace(']','')
+X.columns=X.columns.str.replace(',','')
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+
+xgb_model = XGBClassifier(
+n_estimators= 1200,
+learning_rate= 0.08,
+max_depth= 5,
+subsample=0.8,
+colsample_bytree=0.8,
+objective= 'binary:logistic'
+)
+
+xgb_model=xgb_model.fit(X_train, y_train)
+print('model train fit complete')
+
+# Predict the on the train_data
+X_test["Pred_state_XGB_2"] = xgb_model.predict(X_test)
+print('test set prediction complete')
+# Predict the on the train_data
+X_train["Pred_state_XGB_2"] = xgb_model.predict(X_train)
+print('train set prediction complete')
 
 
 

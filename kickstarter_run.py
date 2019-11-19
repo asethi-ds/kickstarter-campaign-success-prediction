@@ -1,36 +1,50 @@
+import sys
 import time
-import pandas as pd
-start_time = time.time()
+import logging
 import kickstarter_success_mains as ks
-#console for global variables and functions call
-config_file_name = 'loc_config.ini'
-print(config_file_name)
-# Getting the two source datasets
-# Encoding ISO-8859-1 used since some of the project names have non ascii characters
-all_source_files=ks.import_source_files(config_file_name)
+start_time = time.time()
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',level=logging.DEBUG,datefmt='%Y-%m-%d %H:%M:%S',filename='model_run.log')
 
-kickstarter_source_dataset=pd.read_csv(all_source_files[0], encoding='ISO-8859-1')
+logging.debug('Model Run at datetime')
 
-kickstarter_workset=ks.data_preprocess(kickstarter_source_dataset)
+try:
 
-kickstarter_workset=ks.feature_engineering(kickstarter_workset)
-#kickstarter_workset=ks.prepare_model_data(kickstarter_workset)
+    config_file_name                                   = 'loc_config.ini'
+    kickstarter_source_data                            = ks.import_source_files(config_file_name)
+    logging.debug('Projects source data imported')
+    logging.info('%s projects imported with %s columns' % (kickstarter_source_data.shape[0], kickstarter_source_data.shape[1]))
+    kickstarter_workset                                = ks.data_preprocess(kickstarter_source_data)
+    logging.debug('Data-Preprocessed')
+    kickstarter_workset                                = ks.feature_engineering(kickstarter_workset)
+    logging.debug('Feature Engineering Completed')
+    x_train, x_test, y_train, y_test,colnames_mains    = ks.pre_model_process(kickstarter_workset)
+    logging.debug('Data prepared for model implementation')
+    accuracy_logistic,auc_logistic                     = ks.logistic_reg(x_train, x_test, y_train, y_test)
+    logging.info('logistic regression run with  %s accuracy and % auc' % (accuracy_logistic, auc_logisitc))   
+    accuracy_dtree,auc_dtree                           = ks.decision_tree(x_train, x_test, y_train, y_test)
+    logging.info('decision tree run with  %s accuracy and % auc' % (accuracy_dtree, auc_dtree))
+    accuracy_boosting,auc_boosting                     = ks.tree_boosting(x_train, x_test, y_train, y_test)
+    logging.info('boosting model run with  %s accuracy and % auc' % (accuracy_boosting, auc_boosting))
+    accuracy_final,auc_final,pred_out                  = ks.cv_logistic(x_train, x_test, y_train, y_test)
+    logging.info('final implementation with  %s accuracy and % auc' % (accuracy_final, auc_final))
+    output_kickstarter_pred                            = ks.file_post_processing(config_file_name,x_test,pred_out,colnames_mains)
+    database_param_map                                 = ks.extract_database_params(config_file_name)
+    logging.debug('db params mapping retrieved')
+    success                                            = ks.append_to_db(database_param_map,output_kickstarter_pred)
+    logging.debug('Success prediction results stored %s') 
 
-# Function hypothesis test To be added later
-# In this section we carry out hypothesis tests to validate/invalidate some of the assumptions we validate them before we model them
-# Test-1 Duration has effect on the state
-# Test-2 Length of the project name (syallables) has an effect on the state
-# Test-3 Competition has an effect on the state
-# Test-4 Quarter and Day of launch effect the state
-# Modelling campaign success
-#kickstarter_workset.to_csv('kickstarter_head.csv')
-# Model data prepare
-# Identify  categorical variables, do one hot encoding for ones it is needed
-# Identify numeric to be added on the model'
-# Split test-train keeping the class balance constant
-# Make random forest model
-# Get output with metrics
-# Make xgboost model
-# Get output with metrics
-# Ending Print outputs
+
+except Exception as exc:
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+                 
+    print(exc_type)
+    print(exc_type)
+    print(exc_obj)
+    print(exc_tb.tb_lineno)
+    
+finally:
+    pass
+
+
+
 print("--- %s seconds ---" % (time.time() - start_time))

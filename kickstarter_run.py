@@ -44,7 +44,3 @@ except Exception as exc:
     
 finally:
     pass
-
-
-
-print("--- %s seconds ---" % (time.time() - start_time))

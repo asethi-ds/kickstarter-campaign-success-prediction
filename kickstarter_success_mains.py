@@ -189,7 +189,7 @@ def feature_engineering(kickstarter_workset):
     return kickstarter_workset
 
 
-
+# Preparing data for modelling and feature selection
 def pre_model_process(kickstarter_workset):
     
     feature_categorical = ['main_category', 'launched_year', 'launched_quarter','is_weekend',
@@ -242,7 +242,7 @@ def pre_model_process(kickstarter_workset):
 
     return x_train, x_test, y_train, y_test,colnames
 
-
+# logisitc regression model
 def logistic_reg (x_train, x_test, y_train, y_test):
 
     logisticRegr = LogisticRegression()
@@ -275,7 +275,7 @@ def logistic_reg (x_train, x_test, y_train, y_test):
     return model_accuracy_logistic,auc_logistic
     
 
-
+# decision tree model
 def decision_tree (x_train, x_test, y_train, y_test):
     
     clf = DecisionTreeClassifier()
@@ -315,7 +315,7 @@ def decision_tree (x_train, x_test, y_train, y_test):
     plt.show()
     return accuracy_dtree,auc_dtree
 
-
+# boositng model - trees
 def tree_boosting(x_train, x_test, y_train, y_test):
 
     clf = GradientBoostingClassifier()
@@ -357,12 +357,12 @@ def tree_boosting(x_train, x_test, y_train, y_test):
     
     return accuracy_boosting, auc_boosting
 
-
+# cross validation and grid search ovr the logisitic regression model
 def cv_logistic(x_train, x_test, y_train, y_test):
     
     clf = LogisticRegression()
-    grid_values = {'penalty': ['l1', 'l2']}
-    #grid_values = {'penalty': ['l1', 'l2'],'C':[0.001,0.005,0.01,0.5]}
+    #grid_values = {'penalty': ['l1', 'l2']}
+    grid_values = {'penalty': ['l1', 'l2'],'C':[0.001,0.005,0.01,0.5]}
     grid_clf_acc = GridSearchCV(clf, param_grid = grid_values,scoring = 'roc_auc',cv=2)
     grid_clf_acc.fit(x_train,y_train)
 
@@ -391,7 +391,7 @@ def cv_logistic(x_train, x_test, y_train, y_test):
     return acc_logistic_cv, roc_auc_cv, y_pred_acc
 
 
-
+# Handling source files to processed output
 def file_post_processing(config_file_name,x_test,pred_out,colnames_mains):
     
         
@@ -425,7 +425,7 @@ def file_post_processing(config_file_name,x_test,pred_out,colnames_mains):
     
     return output_set
 
-
+# extract database parameters
 def extract_database_params(config_file_name):
  
     config          = ConfigParser()
@@ -442,7 +442,7 @@ def extract_database_params(config_file_name):
     return db_params
  
  
-  
+ # appending data to database 
 def append_to_db(database_param_map,df_out):
     # db credentials
     db_host = database_param_map['db_host']

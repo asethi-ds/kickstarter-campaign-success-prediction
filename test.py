@@ -3,7 +3,7 @@ import sys
 sys.modules[__name__].__dict__.clear()
 vowels='aeiou'
 word='Anurag Sethi'
-#:wq
+
 
 #:wqword=word.lower
 first=word[:0]
